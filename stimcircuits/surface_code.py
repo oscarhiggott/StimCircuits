@@ -11,6 +11,7 @@ def append_anti_basis_error(circuit: stim.Circuit, targets: List[int], p: float,
         else:
             circuit.append_operation("X_ERROR", targets, p)
 
+
 @dataclass
 class CircuitGenParameters:
     rounds: int
@@ -20,6 +21,7 @@ class CircuitGenParameters:
     before_round_data_depolarization: float = 0
     before_measure_flip_probability: float = 0
     after_reset_flip_probability: float = 0
+    exclude_other_basis_detectors: bool = False
 
     def append_begin_round_tick(
             self,
@@ -84,7 +86,8 @@ def finish_surface_code_circuit(
         z_order: List[complex],
         x_observable: List[complex],
         z_observable: List[complex],
-        is_memory_x: bool
+        is_memory_x: bool,
+        exclude_other_basis_detectors: bool = False
 ) -> stim.Circuit:
     if params.rounds < 1:
         raise ValueError("Need rounds >= 1")
@@ -177,11 +180,12 @@ def finish_surface_code_circuit(
     for m_index in measurement_qubits:
         m_coord = q2p[m_index]
         k = len(measurement_qubits) - measure_coord_to_order[m_coord] - 1
-        body.append_operation(
-            "DETECTOR",
-            [stim.target_rec(-k - 1), stim.target_rec(-k - 1 - m)],
-            [m_coord.real, m_coord.imag, 0.0]
-        )
+        if not exclude_other_basis_detectors or m_coord in chosen_basis_measure_coords:
+            body.append_operation(
+                "DETECTOR",
+                [stim.target_rec(-k - 1), stim.target_rec(-k - 1 - m)],
+                [m_coord.real, m_coord.imag, 0.0]
+            )
 
     # Build the end of the circuit, getting out of the cycle state and terminating.
     # In particular, the data measurements create detectors that have to be handled special.
@@ -194,17 +198,17 @@ def finish_surface_code_circuit(
         for delta in z_order:
             data = measure + delta
             if data in p2q:
-                detectors.append(stim.target_rec(-len(data_qubits) + data_coord_to_order[data]))
-        detectors.append(stim.target_rec(-len(data_qubits) - len(measurement_qubits) + measure_coord_to_order[measure]))
+                detectors.append(-len(data_qubits) + data_coord_to_order[data])
+        detectors.append(-len(data_qubits) - len(measurement_qubits) + measure_coord_to_order[measure])
         detectors.sort()
-        tail.append_operation("DETECTOR", detectors, [measure.real, measure.imag, 1.0])
+        tail.append_operation("DETECTOR", [stim.target_rec(x) for x in detectors], [measure.real, measure.imag, 1.0])
 
     # Logical observable
     obs_inc: List[int] = []
     for q in chosen_basis_observable:
-        obs_inc.append(stim.target_rec(-len(data_qubits) + data_coord_to_order[q]))
+        obs_inc.append(-len(data_qubits) + data_coord_to_order[q])
     obs_inc.sort()
-    tail.append_operation("OBSERVABLE_INCLUDE", obs_inc, 0.0)
+    tail.append_operation("OBSERVABLE_INCLUDE", [stim.target_rec(x) for x in obs_inc], 0.0)
 
     # Combine to form final circuit.
     return head + body * (params.rounds - 1) + tail
@@ -265,7 +269,8 @@ def generate_rotated_surface_code_circuit(
         z_order,
         x_observable,
         z_observable,
-        is_memory_x
+        is_memory_x,
+        exclude_other_basis_detectors=params.exclude_other_basis_detectors
     )
 
 
@@ -315,7 +320,8 @@ def generate_unrotated_surface_code_circuit(
         order,
         x_observable,
         z_observable,
-        is_memory_x
+        is_memory_x,
+        exclude_other_basis_detectors=params.exclude_other_basis_detectors
     )
 
 
@@ -341,6 +347,7 @@ def generate_circuit(
     before_round_data_depolarization: float = 0.0,
     before_measure_flip_probability: float = 0.0,
     after_reset_flip_probability: float = 0.0,
+    exclude_other_basis_detectors: bool = False
 ) -> stim.Circuit:
     """Generates common circuits.
 
@@ -384,6 +391,9 @@ def generate_circuit(
                 `X_ERROR(p)` operations applied to qubits after each reset (X basis
                 resets use `Z_ERROR(p)` instead). The after-reset flips are only
                 included if this probability is not 0.
+            exclude_other_basis_detectors: Defaults to False. If True, do not add
+                detectors to measurement qubits that are measured in the opposite
+                basis to the chosen basis of the logical observable.
 
         Returns:
             The generated circuit.
@@ -397,7 +407,8 @@ def generate_circuit(
             after_clifford_depolarization=after_clifford_depolarization,
             before_round_data_depolarization=before_round_data_depolarization,
             before_measure_flip_probability=before_measure_flip_probability,
-            after_reset_flip_probability=after_reset_flip_probability
+            after_reset_flip_probability=after_reset_flip_probability,
+            exclude_other_basis_detectors=exclude_other_basis_detectors
         )
         return generate_surface_code_circuit_from_params(params)
     else:
