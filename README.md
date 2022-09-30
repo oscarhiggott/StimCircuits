@@ -1,7 +1,7 @@
 ## StimCircuits
 
 This package is essentially a translation (from C++ to Python) of some of the code for generating example circuits 
-included in Stim. It currently only supports surface code circuits, so is essentially a translation of [this Stim file](https://github.com/quantumlib/Stim/blob/cbc9caf2a77d5c2b96cd82170b42ef59637baf9c/src/stim/gen/gen_surface_code.cc#L349). 
+included in [Stim](https://github.com/quantumlib/Stim). It currently only supports surface code circuits, so is essentially a translation of [this Stim file](https://github.com/quantumlib/Stim/blob/cbc9caf2a77d5c2b96cd82170b42ef59637baf9c/src/stim/gen/gen_surface_code.cc#L349). 
 This Python implementation is useful for making modifications to the example circuits, without needing to use the Stim 
 C++ API.
 
