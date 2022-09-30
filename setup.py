@@ -4,5 +4,5 @@ setup(
     name='StimCircuits',
     packages=find_packages(),
     author='oscarhiggott',
-    requirements=['pymatching', 'stim', 'pytest']
+    requirements=['stim', 'pytest']
 )

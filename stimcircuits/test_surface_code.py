@@ -1,8 +1,6 @@
 import pytest
 import stim
 from stimcircuits.surface_code import generate_circuit
-import pymatching
-from stimcircuits.decoding_pymatching_glue import detector_error_model_to_nx_graph
 from typing import Set
 
 
@@ -69,49 +67,3 @@ def approx_edges(edges, ndigits: int = 8, boundary: Set[int] = None):
             round(d['error_probability'], ndigits)
         ))
     return new_edges
-
-
-@pytest.mark.parametrize(
-    "code_task,distance,rounds,after_clifford_depolarization,before_round_data_depolarization,"
-    "before_measure_flip_probability,after_reset_flip_probability",
-    gen_test_params[0:1]
-)
-def test_excluding_other_basis_has_same_mwpm_solution_weight(
-        code_task: str,
-        distance: int,
-        rounds: int,
-        after_clifford_depolarization: float,
-        before_round_data_depolarization: float,
-        before_measure_flip_probability: float,
-        after_reset_flip_probability: float
-):
-    py_circuit = generate_circuit(
-        code_task=code_task,
-        distance=distance,
-        rounds=rounds,
-        after_clifford_depolarization=after_clifford_depolarization,
-        before_round_data_depolarization=before_round_data_depolarization,
-        before_measure_flip_probability=before_measure_flip_probability,
-        after_reset_flip_probability=after_reset_flip_probability,
-        exclude_other_basis_detectors=True
-    )
-    cpp_circuit = stim.Circuit.generated(
-        code_task=code_task,
-        distance=distance,
-        rounds=rounds,
-        after_clifford_depolarization=after_clifford_depolarization,
-        before_round_data_depolarization=before_round_data_depolarization,
-        before_measure_flip_probability=before_measure_flip_probability,
-        after_reset_flip_probability=after_reset_flip_probability
-    )
-    cpp_dem = cpp_circuit.detector_error_model(decompose_errors=True)
-    cpp_graph = detector_error_model_to_nx_graph(cpp_dem)
-    cpp_matching = pymatching.Matching(cpp_graph)
-    cpp_edges = sorted(cpp_matching.edges())
-    cpp_edges_approx = approx_edges(cpp_edges, boundary=cpp_matching.boundary)
-    py_dem = py_circuit.detector_error_model(decompose_errors=True)
-    py_graph = detector_error_model_to_nx_graph(py_dem)
-    py_matching = pymatching.Matching(py_graph)
-    py_edges = sorted(py_matching.edges())
-    py_edges_approx = approx_edges(py_edges, boundary=py_matching.boundary)
-    assert len(py_edges_approx) <= len(cpp_edges_approx)
