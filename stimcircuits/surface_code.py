@@ -200,14 +200,14 @@ def finish_surface_code_circuit(
             if data in p2q:
                 detectors.append(-len(data_qubits) + data_coord_to_order[data])
         detectors.append(-len(data_qubits) - len(measurement_qubits) + measure_coord_to_order[measure])
-        detectors.sort()
+        detectors.sort(reverse=True)
         tail.append_operation("DETECTOR", [stim.target_rec(x) for x in detectors], [measure.real, measure.imag, 1.0])
 
     # Logical observable
     obs_inc: List[int] = []
     for q in chosen_basis_observable:
         obs_inc.append(-len(data_qubits) + data_coord_to_order[q])
-    obs_inc.sort()
+    obs_inc.sort(reverse=True)
     tail.append_operation("OBSERVABLE_INCLUDE", [stim.target_rec(x) for x in obs_inc], 0.0)
 
     # Combine to form final circuit.
