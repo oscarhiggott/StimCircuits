@@ -68,16 +68,3 @@ def test_generate_circuit(
         after_reset_flip_probability=after_reset_flip_probability
     )
     assert str(py_circuit) == str(cpp_circuit)
-
-
-def approx_edges(edges, ndigits: int = 8, boundary: Set[int] = None):
-    new_edges = []
-    for u, v, d in edges:
-        new_edges.append((
-            u if u not in boundary else None,
-            v if v not in boundary else None,
-            tuple(sorted(d['fault_ids'])),
-            round(d['weight'], ndigits),
-            round(d['error_probability'], ndigits)
-        ))
-    return new_edges
