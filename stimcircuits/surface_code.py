@@ -224,6 +224,9 @@ def finish_surface_code_circuit(
             data = measure + delta
             if data in p2q:
                 detectors.append(-len(data_qubits) + data_coord_to_order[data])
+            elif wraparound_length is not None:
+                data_wrapped = (data.real % wraparound_length) + (data.imag % wraparound_length) * 1j
+                detectors.append(-len(data_qubits) + data_coord_to_order[data_wrapped])
         detectors.append(-len(data_qubits) - len(measurement_qubits) + measure_coord_to_order[measure])
         detectors.sort(reverse=True)
         tail.append_operation("DETECTOR", [stim.target_rec(x) for x in detectors], [measure.real, measure.imag, 1.0])
@@ -383,7 +386,7 @@ def generate_unrotated_toric_code_circuit(
     order: List[complex] = [1, 1j, -1j, -1]
 
     def coord_to_idx(q: complex) -> int:
-        return int(q.real + q.imag * (2 * d - 1))
+        return int(q.real + q.imag * (2 * d))
 
     # Delegate.
     return finish_surface_code_circuit(
@@ -417,8 +420,8 @@ def generate_surface_or_toric_code_circuit_from_params(params: CircuitGenParamet
             return generate_unrotated_toric_code_circuit(params, True)
         elif params.task == "unrotated_memory_z":
             return generate_unrotated_toric_code_circuit(params, False)
-    else:
-        raise ValueError(f"Unrecognised task: {params.task}")
+
+    raise ValueError(f"Unrecognised task: {params.task}")
 
 
 def generate_circuit(
