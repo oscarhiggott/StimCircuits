@@ -18,7 +18,7 @@ from dataclasses import dataclass
 import math
 
 
-def append_anti_basis_error(circuit: stim.Circuit, targets: List[int], p: float, basis: str):
+def append_anti_basis_error(circuit: stim.Circuit, targets: List[int], p: float, basis: str) -> None:
     if p > 0:
         if basis == "X":
             circuit.append_operation("Z_ERROR", targets, p)
@@ -41,7 +41,7 @@ class CircuitGenParameters:
             self,
             circuit: stim.Circuit,
             data_qubits: List[int]
-    ):
+    ) -> None:
         circuit.append_operation("TICK", [])
         if self.before_round_data_depolarization > 0:
             circuit.append_operation("DEPOLARIZE1", data_qubits, self.before_round_data_depolarization)
@@ -51,7 +51,7 @@ class CircuitGenParameters:
             circuit: stim.Circuit,
             name: str,
             targets: List[int]
-    ):
+    ) -> None:
         circuit.append_operation(name, targets)
         if self.after_clifford_depolarization > 0:
             circuit.append_operation("DEPOLARIZE1", targets, self.after_clifford_depolarization)
@@ -61,7 +61,7 @@ class CircuitGenParameters:
             circuit: stim.Circuit,
             name: str,
             targets: List[int],
-    ):
+    ) -> None:
         circuit.append_operation(name, targets)
         if self.after_clifford_depolarization > 0:
             circuit.append_operation("DEPOLARIZE2", targets, self.after_clifford_depolarization)
@@ -71,11 +71,11 @@ class CircuitGenParameters:
             circuit: stim.Circuit,
             targets: List[int],
             basis: str = "Z"
-    ):
+    ) -> None:
         circuit.append_operation("R" + basis, targets)
         append_anti_basis_error(circuit, targets, self.after_reset_flip_probability, basis)
 
-    def append_measure(self, circuit: stim.Circuit, targets: List[int], basis: str = "Z"):
+    def append_measure(self, circuit: stim.Circuit, targets: List[int], basis: str = "Z") -> None:
         append_anti_basis_error(circuit, targets, self.before_measure_flip_probability, basis)
         circuit.append_operation("M" + basis, targets)
 
@@ -84,7 +84,7 @@ class CircuitGenParameters:
             circuit: stim.Circuit,
             targets: List[int],
             basis: str = "Z"
-    ):
+    ) -> None:
         append_anti_basis_error(circuit, targets, self.before_measure_flip_probability, basis)
         circuit.append_operation("MR" + basis, targets)
         append_anti_basis_error(circuit, targets, self.after_reset_flip_probability, basis)
