@@ -426,6 +426,8 @@ def generate_circuit(
                     - "surface_code:rotated_memory_z"
                     - "surface_code:unrotated_memory_x"
                     - "surface_code:unrotated_memory_z"
+                    - "toric_code:unrotated_memory_x"
+                    - "toric_code:unrotated_memory_z"
             distance: The desired code distance of the generated circuit. The code
                 distance is the minimum number of physical errors needed to cause a
                 logical error. This parameter indirectly determines how many qubits the
