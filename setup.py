@@ -4,5 +4,5 @@ setup(
     name='StimCircuits',
     packages=find_packages(),
     author='oscarhiggott',
-    requirements=['stim', 'pytest']
+    install_requires=['stim', 'pytest']
 )

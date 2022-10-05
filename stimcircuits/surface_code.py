@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import stim
-from typing import Callable, Set, List, Dict, Tuple
+from typing import Callable, Set, List, Dict, Tuple, Optional
 from dataclasses import dataclass
 import math
 
@@ -30,6 +30,7 @@ def append_anti_basis_error(circuit: stim.Circuit, targets: List[int], p: float,
 class CircuitGenParameters:
     rounds: int
     distance: int
+    code_name: str
     task: str
     after_clifford_depolarization: float = 0
     before_round_data_depolarization: float = 0
@@ -101,7 +102,9 @@ def finish_surface_code_circuit(
         x_observable: List[complex],
         z_observable: List[complex],
         is_memory_x: bool,
-        exclude_other_basis_detectors: bool = False
+        *,
+        exclude_other_basis_detectors: bool = False,
+        wraparound_length: Optional[int] = None
 ) -> stim.Circuit:
     if params.rounds < 1:
         raise ValueError("Need rounds >= 1")
@@ -153,11 +156,19 @@ def finish_surface_code_circuit(
             if data in p2q:
                 cnot_targets[k].append(p2q[measure])
                 cnot_targets[k].append(p2q[data])
+            elif wraparound_length is not None:
+                data_wrapped = (data.real % wraparound_length) + (data.imag % wraparound_length) * 1j
+                cnot_targets[k].append(p2q[measure])
+                cnot_targets[k].append(p2q[data_wrapped])
 
         for measure in sorted(z_measure_coords, key=lambda c: (c.real, c.imag)):
             data = measure + z_order[k]
             if data in p2q:
                 cnot_targets[k].append(p2q[data])
+                cnot_targets[k].append(p2q[measure])
+            elif wraparound_length is not None:
+                data_wrapped = (data.real % wraparound_length) + (data.imag % wraparound_length) * 1j
+                cnot_targets[k].append(p2q[data_wrapped])
                 cnot_targets[k].append(p2q[measure])
 
     # Build the repeated actions that make up the surface code cycle
@@ -339,15 +350,73 @@ def generate_unrotated_surface_code_circuit(
     )
 
 
-def generate_surface_code_circuit_from_params(params: CircuitGenParameters) -> stim.Circuit:
-    if params.task == "rotated_memory_x":
-        return generate_rotated_surface_code_circuit(params, True)
-    elif params.task == "rotated_memory_z":
-        return generate_rotated_surface_code_circuit(params, False)
-    elif params.task == "unrotated_memory_x":
-        return generate_unrotated_surface_code_circuit(params, True)
-    elif params.task == "unrotated_memory_z":
-        return generate_unrotated_surface_code_circuit(params, False)
+def generate_unrotated_toric_code_circuit(
+        params: CircuitGenParameters,
+        is_memory_x: bool
+) -> stim.Circuit:
+    d = params.distance
+    assert params.rounds > 0
+
+    # Place qubits
+    data_coords: Set[complex] = set()
+    x_measure_coords: Set[complex] = set()
+    z_measure_coords: Set[complex] = set()
+    x_observable: List[complex] = []
+    z_observable: List[complex] = []
+    for x in range(2 * d):
+        for y in range(2 * d):
+            q = x + y * 1j
+            parity = (x % 2) != (y % 2)
+            if parity:
+                if x % 2 == 0:
+                    z_measure_coords.add(q)
+                else:
+                    x_measure_coords.add(q)
+            else:
+                data_coords.add(q)
+                if x == 0:
+                    x_observable.append(q)
+                if y == 0:
+                    z_observable.append(q)
+
+    # Define interaction order. Doesn't matter so much for unrotated.
+    order: List[complex] = [1, 1j, -1j, -1]
+
+    def coord_to_idx(q: complex) -> int:
+        return int(q.real + q.imag * (2 * d - 1))
+
+    # Delegate.
+    return finish_surface_code_circuit(
+        coord_to_idx,
+        data_coords,
+        x_measure_coords,
+        z_measure_coords,
+        params,
+        order,
+        order,
+        x_observable,
+        z_observable,
+        is_memory_x,
+        exclude_other_basis_detectors=params.exclude_other_basis_detectors,
+        wraparound_length=2 * d
+    )
+
+
+def generate_surface_or_toric_code_circuit_from_params(params: CircuitGenParameters) -> stim.Circuit:
+    if params.code_name == "surface_code":
+        if params.task == "rotated_memory_x":
+            return generate_rotated_surface_code_circuit(params, True)
+        elif params.task == "rotated_memory_z":
+            return generate_rotated_surface_code_circuit(params, False)
+        elif params.task == "unrotated_memory_x":
+            return generate_unrotated_surface_code_circuit(params, True)
+        elif params.task == "unrotated_memory_z":
+            return generate_unrotated_surface_code_circuit(params, False)
+    elif params.code_name == "toric_code":
+        if params.task == "unrotated_memory_x":
+            return generate_unrotated_toric_code_circuit(params, True)
+        elif params.task == "unrotated_memory_z":
+            return generate_unrotated_toric_code_circuit(params, False)
     else:
         raise ValueError(f"Unrecognised task: {params.task}")
 
@@ -413,10 +482,11 @@ def generate_circuit(
             The generated circuit.
         """
     code_name, task = code_task.split(":")
-    if code_name == "surface_code":
+    if code_name in ["surface_code", "toric_code"]:
         params = CircuitGenParameters(
             rounds=rounds,
             distance=distance,
+            code_name=code_name,
             task=task,
             after_clifford_depolarization=after_clifford_depolarization,
             before_round_data_depolarization=before_round_data_depolarization,
@@ -424,6 +494,6 @@ def generate_circuit(
             after_reset_flip_probability=after_reset_flip_probability,
             exclude_other_basis_detectors=exclude_other_basis_detectors
         )
-        return generate_surface_code_circuit_from_params(params)
+        return generate_surface_or_toric_code_circuit_from_params(params)
     else:
         raise ValueError(f"Code name {code_name} not recognised")
