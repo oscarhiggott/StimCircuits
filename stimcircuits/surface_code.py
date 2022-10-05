@@ -302,9 +302,10 @@ def generate_rotated_surface_code_circuit(
     )
 
 
-def generate_unrotated_surface_code_circuit(
+def _generate_unrotated_surface_or_toric_code_circuit(
         params: CircuitGenParameters,
-        is_memory_x: bool
+        is_memory_x: bool,
+        is_toric: bool
 ) -> stim.Circuit:
     d = params.distance
     assert params.rounds > 0
@@ -315,8 +316,9 @@ def generate_unrotated_surface_code_circuit(
     z_measure_coords: Set[complex] = set()
     x_observable: List[complex] = []
     z_observable: List[complex] = []
-    for x in range(2 * d - 1):
-        for y in range(2 * d - 1):
+    length = 2 * d if is_toric else 2 * d - 1
+    for x in range(length):
+        for y in range(length):
             q = x + y * 1j
             parity = (x % 2) != (y % 2)
             if parity:
@@ -335,58 +337,7 @@ def generate_unrotated_surface_code_circuit(
     order: List[complex] = [1, 1j, -1j, -1]
 
     def coord_to_idx(q: complex) -> int:
-        return int(q.real + q.imag * (2 * d - 1))
-
-    # Delegate.
-    return finish_surface_code_circuit(
-        coord_to_idx,
-        data_coords,
-        x_measure_coords,
-        z_measure_coords,
-        params,
-        order,
-        order,
-        x_observable,
-        z_observable,
-        is_memory_x,
-        exclude_other_basis_detectors=params.exclude_other_basis_detectors
-    )
-
-
-def generate_unrotated_toric_code_circuit(
-        params: CircuitGenParameters,
-        is_memory_x: bool
-) -> stim.Circuit:
-    d = params.distance
-    assert params.rounds > 0
-
-    # Place qubits
-    data_coords: Set[complex] = set()
-    x_measure_coords: Set[complex] = set()
-    z_measure_coords: Set[complex] = set()
-    x_observable: List[complex] = []
-    z_observable: List[complex] = []
-    for x in range(2 * d):
-        for y in range(2 * d):
-            q = x + y * 1j
-            parity = (x % 2) != (y % 2)
-            if parity:
-                if x % 2 == 0:
-                    z_measure_coords.add(q)
-                else:
-                    x_measure_coords.add(q)
-            else:
-                data_coords.add(q)
-                if x == 0:
-                    x_observable.append(q)
-                if y == 0:
-                    z_observable.append(q)
-
-    # Define interaction order. Doesn't matter so much for unrotated.
-    order: List[complex] = [1, 1j, -1j, -1]
-
-    def coord_to_idx(q: complex) -> int:
-        return int(q.real + q.imag * (2 * d))
+        return int(q.real + q.imag * length)
 
     # Delegate.
     return finish_surface_code_circuit(
@@ -401,7 +352,29 @@ def generate_unrotated_toric_code_circuit(
         z_observable,
         is_memory_x,
         exclude_other_basis_detectors=params.exclude_other_basis_detectors,
-        wraparound_length=2 * d
+        wraparound_length=2 * d if is_toric else None
+    )
+
+
+def generate_unrotated_surface_code_circuit(
+        params: CircuitGenParameters,
+        is_memory_x: bool
+) -> stim.Circuit:
+    return _generate_unrotated_surface_or_toric_code_circuit(
+        params=params,
+        is_memory_x=is_memory_x,
+        is_toric=False
+    )
+
+
+def generate_unrotated_toric_code_circuit(
+        params: CircuitGenParameters,
+        is_memory_x: bool
+) -> stim.Circuit:
+    return _generate_unrotated_surface_or_toric_code_circuit(
+        params=params,
+        is_memory_x=is_memory_x,
+        is_toric=True
     )
 
 
