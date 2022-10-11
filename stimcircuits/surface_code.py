@@ -37,6 +37,7 @@ class CircuitGenParameters:
     before_measure_flip_probability: float = 0
     after_reset_flip_probability: float = 0
     exclude_other_basis_detectors: bool = False
+    dX: Optional[int] = None
 
     def append_begin_round_tick(
             self,
