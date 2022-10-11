@@ -247,14 +247,15 @@ def generate_rotated_surface_code_circuit(
         params: CircuitGenParameters,
         is_memory_x: bool
 ) -> stim.Circuit:
-    d = params.distance
+    dZ = params.distance
+    dX = params.dX if params.dX is not None else dZ
 
     # Place data qubits
     data_coords: Set[complex] = set()
     x_observable: List[complex] = []
     z_observable: List[complex] = []
-    for x in [i + 0.5 for i in range(d)]:
-        for y in [i + 0.5 for i in range(d)]:
+    for x in [i + 0.5 for i in range(dZ)]:
+        for y in [i + 0.5 for i in range(dX)]:
             q = x * 2 + y * 2 * 1j
             data_coords.add(q)
             if y == 0.5:
@@ -265,11 +266,11 @@ def generate_rotated_surface_code_circuit(
     # Place measurement qubits.
     x_measure_coords: Set[complex] = set()
     z_measure_coords: Set[complex] = set()
-    for x in range(d + 1):
-        for y in range(d + 1):
+    for x in range(dZ + 1):
+        for y in range(dX + 1):
             q = x * 2 + y * 2j
-            on_boundary_1 = x == 0 or x == d
-            on_boundary_2 = y == 0 or y == d
+            on_boundary_1 = x == 0 or x == dZ
+            on_boundary_2 = y == 0 or y == dX
             parity = (x % 2) != (y % 2)
             if on_boundary_1 and parity:
                 continue
@@ -286,7 +287,7 @@ def generate_rotated_surface_code_circuit(
 
     def coord_to_idx(q: complex) -> int:
         q = q - math.fmod(q.real, 2)*1j
-        return int(q.real + q.imag * (d + 0.5))
+        return int(q.real + q.imag * (dZ + 0.5))
 
     return finish_surface_code_circuit(
         coord_to_idx,
