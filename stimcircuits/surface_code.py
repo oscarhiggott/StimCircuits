@@ -398,7 +398,8 @@ def generate_circuit(
     before_round_data_depolarization: float = 0.0,
     before_measure_flip_probability: float = 0.0,
     after_reset_flip_probability: float = 0.0,
-    exclude_other_basis_detectors: bool = False
+    exclude_other_basis_detectors: bool = False,
+    dX: Optional[int] = None,
 ) -> stim.Circuit:
     """Generates common circuits.
 
@@ -447,6 +448,9 @@ def generate_circuit(
             exclude_other_basis_detectors: Defaults to False. If True, do not add
                 detectors to measurement qubits that are measured in the opposite
                 basis to the chosen basis of the logical observable.
+            dX: Defaults to None. The desired code distance of the X logical
+                operator in the generated circuit: the minimum number of X physical
+                errors needed to cause a X logical error.
 
         Returns:
             The generated circuit.
@@ -462,7 +466,8 @@ def generate_circuit(
             before_round_data_depolarization=before_round_data_depolarization,
             before_measure_flip_probability=before_measure_flip_probability,
             after_reset_flip_probability=after_reset_flip_probability,
-            exclude_other_basis_detectors=exclude_other_basis_detectors
+            exclude_other_basis_detectors=exclude_other_basis_detectors,
+            dX=dX,
         )
         return generate_surface_or_toric_code_circuit_from_params(params)
     else:
