@@ -356,28 +356,6 @@ def _generate_unrotated_surface_or_toric_code_circuit(
     )
 
 
-def generate_unrotated_surface_code_circuit(
-        params: CircuitGenParameters,
-        is_memory_x: bool
-) -> stim.Circuit:
-    return _generate_unrotated_surface_or_toric_code_circuit(
-        params=params,
-        is_memory_x=is_memory_x,
-        is_toric=False
-    )
-
-
-def generate_unrotated_toric_code_circuit(
-        params: CircuitGenParameters,
-        is_memory_x: bool
-) -> stim.Circuit:
-    return _generate_unrotated_surface_or_toric_code_circuit(
-        params=params,
-        is_memory_x=is_memory_x,
-        is_toric=True
-    )
-
-
 def generate_surface_or_toric_code_circuit_from_params(params: CircuitGenParameters) -> stim.Circuit:
     if params.code_name == "surface_code":
         if params.task == "rotated_memory_x":
@@ -385,14 +363,26 @@ def generate_surface_or_toric_code_circuit_from_params(params: CircuitGenParamet
         elif params.task == "rotated_memory_z":
             return generate_rotated_surface_code_circuit(params, False)
         elif params.task == "unrotated_memory_x":
-            return generate_unrotated_surface_code_circuit(params, True)
+            return _generate_unrotated_surface_or_toric_code_circuit(
+                params=params,
+                is_memory_x=True,
+                is_toric=False)
         elif params.task == "unrotated_memory_z":
-            return generate_unrotated_surface_code_circuit(params, False)
+            return _generate_unrotated_surface_or_toric_code_circuit(
+                params=params,
+                is_memory_x=False,
+                is_toric=False)
     elif params.code_name == "toric_code":
         if params.task == "unrotated_memory_x":
-            return generate_unrotated_toric_code_circuit(params, True)
+            return _generate_unrotated_surface_or_toric_code_circuit(
+                params=params,
+                is_memory_x=True,
+                is_toric=True)
         elif params.task == "unrotated_memory_z":
-            return generate_unrotated_toric_code_circuit(params, False)
+            return _generate_unrotated_surface_or_toric_code_circuit(
+                params=params,
+                is_memory_x=False,
+                is_toric=True)
 
     raise ValueError(f"Unrecognised task: {params.task}")
 
