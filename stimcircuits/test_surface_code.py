@@ -18,26 +18,26 @@ from stimcircuits.surface_code import generate_circuit
 from typing import Set
 
 
-gen_test_params = [
+gen_test_params_surface_code = [
     ("surface_code:unrotated_memory_x", 3, 10, 0.001, 0.002, 0.003, 0.004),
     ("surface_code:unrotated_memory_x", 5, 1, 0.1, 0.002, 0.003, 0.004),
-    ("surface_code:unrotated_memory_x", 2, 2, 0, 0, 0, 0),
+    ("surface_code:unrotated_memory_x", 2, 2, 0, 0.01, 0, 0),
     ("surface_code:unrotated_memory_z", 3, 2, 0.001, 0.002, 0.003, 0.004),
     ("surface_code:unrotated_memory_z", 5, 1, 0.1, 0.002, 0.003, 0.004),
-    ("surface_code:unrotated_memory_z", 2, 2, 0, 0, 0, 0),
+    ("surface_code:unrotated_memory_z", 2, 2, 0, 0.01, 0, 0),
     ("surface_code:rotated_memory_x", 3, 10, 0.001, 0.002, 0.003, 0.004),
     ("surface_code:rotated_memory_x", 5, 1, 0.1, 0.002, 0.003, 0.004),
-    ("surface_code:rotated_memory_x", 2, 2, 0, 0, 0, 0),
+    ("surface_code:rotated_memory_x", 2, 2, 0, 0.01, 0, 0),
     ("surface_code:rotated_memory_z", 3, 2, 0.001, 0.002, 0.003, 0.004),
     ("surface_code:rotated_memory_z", 5, 1, 0.1, 0.002, 0.003, 0.004),
-    ("surface_code:rotated_memory_z", 2, 2, 0, 0, 0, 0)
+    ("surface_code:rotated_memory_z", 2, 2, 0, 0.01, 0, 0)
 ]
 
 
 @pytest.mark.parametrize(
     "code_task,distance,rounds,after_clifford_depolarization,before_round_data_depolarization,"
     "before_measure_flip_probability,after_reset_flip_probability",
-    gen_test_params
+    gen_test_params_surface_code
 )
 def test_generate_circuit(
         code_task: str,
@@ -47,7 +47,7 @@ def test_generate_circuit(
         before_round_data_depolarization: float,
         before_measure_flip_probability: float,
         after_reset_flip_probability: float
-):
+) -> None:
     py_circuit = generate_circuit(
         code_task=code_task,
         distance=distance,
@@ -68,3 +68,103 @@ def test_generate_circuit(
         after_reset_flip_probability=after_reset_flip_probability
     )
     assert str(py_circuit) == str(cpp_circuit)
+
+
+gen_test_params_toric_code = [
+    ("toric_code:unrotated_memory_x", 3, 10, 0.001, 0.002, 0.003, 0.004),
+    ("toric_code:unrotated_memory_x", 5, 1, 0.1, 0.002, 0.003, 0.004),
+    ("toric_code:unrotated_memory_x", 2, 2, 0, 0.01, 0, 0),
+    ("toric_code:unrotated_memory_z", 3, 2, 0.001, 0.002, 0.003, 0.004),
+    ("toric_code:unrotated_memory_z", 5, 1, 0.1, 0.002, 0.003, 0.004),
+    ("toric_code:unrotated_memory_z", 2, 2, 0, 0.01, 0, 0),
+]
+
+
+@pytest.mark.parametrize(
+    "code_task,distance,rounds,after_clifford_depolarization,before_round_data_depolarization,"
+    "before_measure_flip_probability,after_reset_flip_probability",
+    gen_test_params_surface_code + gen_test_params_toric_code
+)
+def test_generated_circuit_graphlike_distance(
+        code_task: str,
+        distance: int,
+        rounds: int,
+        after_clifford_depolarization: float,
+        before_round_data_depolarization: float,
+        before_measure_flip_probability: float,
+        after_reset_flip_probability: float
+) -> None:
+    for b in (False, True):
+        circuit = generate_circuit(
+            code_task=code_task,
+            distance=distance,
+            rounds=rounds,
+            after_clifford_depolarization=after_clifford_depolarization,
+            before_round_data_depolarization=before_round_data_depolarization,
+            before_measure_flip_probability=before_measure_flip_probability,
+            after_reset_flip_probability=after_reset_flip_probability,
+            exclude_other_basis_detectors=b
+        )
+        dem = circuit.detector_error_model(decompose_errors=True)
+        shortest_error = dem.shortest_graphlike_error()
+        assert len(shortest_error) == distance
+
+
+@pytest.mark.parametrize(
+    "code_task,distance,rounds,after_clifford_depolarization,before_round_data_depolarization,"
+    "before_measure_flip_probability,after_reset_flip_probability",
+    gen_test_params_surface_code + gen_test_params_toric_code
+)
+def test_no_hyperedges_when_exclude_other_basis_detectors(
+        code_task: str,
+        distance: int,
+        rounds: int,
+        after_clifford_depolarization: float,
+        before_round_data_depolarization: float,
+        before_measure_flip_probability: float,
+        after_reset_flip_probability: float
+) -> None:
+    circuit = generate_circuit(
+        code_task=code_task,
+        distance=distance,
+        rounds=rounds,
+        after_clifford_depolarization=after_clifford_depolarization,
+        before_round_data_depolarization=before_round_data_depolarization,
+        before_measure_flip_probability=before_measure_flip_probability,
+        after_reset_flip_probability=after_reset_flip_probability,
+        exclude_other_basis_detectors=True
+    )
+    dem = circuit.detector_error_model(decompose_errors=False)
+    # The following line will raise an exception if hyperedges are present
+    dem.shortest_graphlike_error(ignore_ungraphlike_errors=False)
+
+
+@pytest.mark.parametrize(
+    "code_task,distance,rounds,after_clifford_depolarization,before_round_data_depolarization,"
+    "before_measure_flip_probability,after_reset_flip_probability",
+    gen_test_params_toric_code
+)
+def test_no_boundary_for_toric_code_circuits(
+        code_task: str,
+        distance: int,
+        rounds: int,
+        after_clifford_depolarization: float,
+        before_round_data_depolarization: float,
+        before_measure_flip_probability: float,
+        after_reset_flip_probability: float
+) -> None:
+    circuit = generate_circuit(
+        code_task=code_task,
+        distance=distance,
+        rounds=rounds,
+        after_clifford_depolarization=after_clifford_depolarization,
+        before_round_data_depolarization=before_round_data_depolarization,
+        before_measure_flip_probability=before_measure_flip_probability,
+        after_reset_flip_probability=after_reset_flip_probability,
+        exclude_other_basis_detectors=True
+    )
+    dem = circuit.detector_error_model(decompose_errors=False)
+    for instruction in dem:
+        if isinstance(instruction, stim.DemInstruction) and instruction.type == "error":
+            num_dets = sum(1 for t in instruction.targets_copy() if t.is_relative_detector_id())
+            assert num_dets > 1
