@@ -59,6 +59,17 @@ gen_test_params_rectangular_rotated_surface_code = [
     ("surface_code:rotated_memory_z", 2, 2, 2, 0, 0.01, 0, 0)
 ]
 
+gen_test_params_rectangular_unrotated_surface_code = [
+    ("surface_code:unrotated_memory_x", 3, 3, 10, 0.001, 0.002, 0.003, 0.004),
+    ("surface_code:unrotated_memory_x", 5, 3, 1, 0.1, 0.002, 0.003, 0.004),
+    ("surface_code:unrotated_memory_x", 3, 5, 1, 0.1, 0.002, 0.003, 0.004),
+    ("surface_code:unrotated_memory_x", 2, 3, 2, 0, 0.01, 0, 0),
+    ("surface_code:unrotated_memory_z", 3, 5, 2, 0.001, 0.002, 0.003, 0.004),
+    ("surface_code:unrotated_memory_z", 5, 3, 1, 0.1, 0.002, 0.003, 0.004),
+    ("surface_code:unrotated_memory_z", 2, 2, 2, 0, 0.01, 0, 0)
+]
+
+
 @pytest.mark.parametrize(
     "code_task,distance,rounds,after_clifford_depolarization,before_round_data_depolarization,"
     "before_measure_flip_probability,after_reset_flip_probability",
@@ -102,6 +113,16 @@ gen_test_params_toric_code = [
     ("toric_code:unrotated_memory_z", 3, 2, 0.001, 0.002, 0.003, 0.004),
     ("toric_code:unrotated_memory_z", 5, 1, 0.1, 0.002, 0.003, 0.004),
     ("toric_code:unrotated_memory_z", 2, 2, 0, 0.01, 0, 0),
+]
+
+gen_test_params_rectangular_toric_code = [
+    ("toric_code:unrotated_memory_x", 3, 3, 10, 0.001, 0.002, 0.003, 0.004),
+    ("toric_code:unrotated_memory_x", 5, 3, 1, 0.1, 0.002, 0.003, 0.004),
+    ("toric_code:unrotated_memory_x", 3, 5, 1, 0.1, 0.002, 0.003, 0.004),
+    ("toric_code:unrotated_memory_x", 2, 2, 2, 0, 0.01, 0, 0),
+    ("toric_code:unrotated_memory_z", 3, 2, 2, 0.001, 0.002, 0.003, 0.004),
+    ("toric_code:unrotated_memory_z", 2, 5, 1, 0.1, 0.002, 0.003, 0.004),
+    ("toric_code:unrotated_memory_z", 2, 2, 2, 0, 0.01, 0, 0),
 ]
 
 
@@ -200,6 +221,38 @@ def test_generated_rectangular_circuit_graphlike_distance(
         shortest_error = dem.shortest_graphlike_error()
         assert len(shortest_error) == z_distance if code_task[-1] == 'x' else \
             x_distance
+
+@pytest.mark.parametrize(
+    "code_task,x_distance,z_distance,rounds,after_clifford_depolarization,"
+    "before_round_data_depolarization,"
+    "before_measure_flip_probability,after_reset_flip_probability",
+    gen_test_params_rectangular_unrotated_surface_code+gen_test_params_rectangular_toric_code
+)
+def test_not_implemented_rectangular_circuit(
+        code_task: str,
+        x_distance: int,
+        z_distance: int,
+        rounds: int,
+        after_clifford_depolarization: float,
+        before_round_data_depolarization: float,
+        before_measure_flip_probability: float,
+        after_reset_flip_probability: float
+) -> None:
+    with pytest.raises(NotImplementedError) as e_info:
+        for b in (False, True):
+            circuit = generate_circuit(
+                code_task=code_task,
+                x_distance=x_distance,
+                z_distance=z_distance,
+                rounds=rounds,
+                after_clifford_depolarization=after_clifford_depolarization,
+                before_round_data_depolarization=before_round_data_depolarization,
+                before_measure_flip_probability=before_measure_flip_probability,
+                after_reset_flip_probability=after_reset_flip_probability,
+                exclude_other_basis_detectors=b
+            )
+
+
 @pytest.mark.parametrize(
     "code_task,distance,rounds,after_clifford_depolarization,before_round_data_depolarization,"
     "before_measure_flip_probability,after_reset_flip_probability",
