@@ -28,16 +28,17 @@ def append_anti_basis_error(circuit: stim.Circuit, targets: List[int], p: float,
 
 @dataclass
 class CircuitGenParameters:
-    rounds: int
-    distance: int
     code_name: str
     task: str
+    rounds: int
+    distance: int = None
+    x_distance: int = None
+    z_distance: int = None
     after_clifford_depolarization: float = 0
     before_round_data_depolarization: float = 0
     before_measure_flip_probability: float = 0
     after_reset_flip_probability: float = 0
     exclude_other_basis_detectors: bool = False
-    dX: Optional[int] = None
 
     def append_begin_round_tick(
             self,
@@ -247,15 +248,19 @@ def generate_rotated_surface_code_circuit(
         params: CircuitGenParameters,
         is_memory_x: bool
 ) -> stim.Circuit:
-    dZ = params.distance
-    dX = params.dX if params.dX is not None else dZ
+    if params.distance is not None:
+        x_distance=params.distance
+        z_distance=params.distance
+    else:
+        x_distance=params.x_distance
+        z_distance=params.z_distance
 
     # Place data qubits
     data_coords: Set[complex] = set()
     x_observable: List[complex] = []
     z_observable: List[complex] = []
-    for x in [i + 0.5 for i in range(dZ)]:
-        for y in [i + 0.5 for i in range(dX)]:
+    for x in [i + 0.5 for i in range(z_distance)]:
+        for y in [i + 0.5 for i in range(x_distance)]:
             q = x * 2 + y * 2 * 1j
             data_coords.add(q)
             if y == 0.5:
@@ -266,11 +271,11 @@ def generate_rotated_surface_code_circuit(
     # Place measurement qubits.
     x_measure_coords: Set[complex] = set()
     z_measure_coords: Set[complex] = set()
-    for x in range(dZ + 1):
-        for y in range(dX + 1):
+    for x in range(z_distance + 1):
+        for y in range(x_distance + 1):
             q = x * 2 + y * 2j
-            on_boundary_1 = x == 0 or x == dZ
-            on_boundary_2 = y == 0 or y == dX
+            on_boundary_1 = x == 0 or x == z_distance
+            on_boundary_2 = y == 0 or y == x_distance
             parity = (x % 2) != (y % 2)
             if on_boundary_1 and parity:
                 continue
@@ -287,7 +292,7 @@ def generate_rotated_surface_code_circuit(
 
     def coord_to_idx(q: complex) -> int:
         q = q - math.fmod(q.real, 2)*1j
-        return int(q.real + q.imag * (dZ + 0.5))
+        return int(q.real + q.imag * (z_distance + 0.5))
 
     return finish_surface_code_circuit(
         coord_to_idx,
@@ -392,14 +397,15 @@ def generate_surface_or_toric_code_circuit_from_params(params: CircuitGenParamet
 def generate_circuit(
     code_task: str,
     *,
-    distance: int,
     rounds: int,
+    distance: int = None,
+    x_distance: int = None,
+    z_distance: int = None,
     after_clifford_depolarization: float = 0.0,
     before_round_data_depolarization: float = 0.0,
     before_measure_flip_probability: float = 0.0,
     after_reset_flip_probability: float = 0.0,
     exclude_other_basis_detectors: bool = False,
-    dX: Optional[int] = None,
 ) -> stim.Circuit:
     """Generates common circuits.
 
@@ -421,10 +427,18 @@ def generate_circuit(
                     - "surface_code:unrotated_memory_z"
                     - "toric_code:unrotated_memory_x"
                     - "toric_code:unrotated_memory_z"
-            distance: The desired code distance of the generated circuit. The code
-                distance is the minimum number of physical errors needed to cause a
-                logical error. This parameter indirectly determines how many qubits the
-                generated circuit uses.
+            distance: Defaults to None. The desired code distance of the generated
+                circuit. The code distance is the minimum number of physical
+                errors needed to cause a logical error. This parameter indirectly determines
+                how many qubits the generated circuit uses.
+            x_distance: Defaults to None. The desired code distance of the X
+            logical
+                operator in the generated circuit: the minimum number of X physical
+                errors needed to cause a X logical error.
+            z_distance: Defaults to None. The desired code distance of the Z
+            logical
+                operator in the generated circuit: the minimum number of Z physical
+                errors needed to cause a Z logical error.
             rounds: How many times the measurement qubits in the generated circuit will
                 be measured. Indirectly determines the duration of the generated
                 circuit.
@@ -448,9 +462,6 @@ def generate_circuit(
             exclude_other_basis_detectors: Defaults to False. If True, do not add
                 detectors to measurement qubits that are measured in the opposite
                 basis to the chosen basis of the logical observable.
-            dX: Defaults to None. The desired code distance of the X logical
-                operator in the generated circuit: the minimum number of X physical
-                errors needed to cause a X logical error.
 
         Returns:
             The generated circuit.
@@ -458,16 +469,17 @@ def generate_circuit(
     code_name, task = code_task.split(":")
     if code_name in ["surface_code", "toric_code"]:
         params = CircuitGenParameters(
-            rounds=rounds,
-            distance=distance,
             code_name=code_name,
             task=task,
+            rounds=rounds,
+            distance=distance,
+            x_distance=x_distance,
+            z_distance=z_distance,
             after_clifford_depolarization=after_clifford_depolarization,
             before_round_data_depolarization=before_round_data_depolarization,
             before_measure_flip_probability=before_measure_flip_probability,
             after_reset_flip_probability=after_reset_flip_probability,
             exclude_other_basis_detectors=exclude_other_basis_detectors,
-            dX=dX,
         )
         return generate_surface_or_toric_code_circuit_from_params(params)
     else:
