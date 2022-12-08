@@ -370,16 +370,25 @@ def generate_surface_or_toric_code_circuit_from_params(params: CircuitGenParamet
         elif params.task == "rotated_memory_z":
             return generate_rotated_surface_code_circuit(params, False)
         elif params.task == "unrotated_memory_x":
+            if params.distance is None:
+                raise NotImplementedError('Rectangular unrotated memories are '
+                                          'not currently supported')
             return _generate_unrotated_surface_or_toric_code_circuit(
                 params=params,
                 is_memory_x=True,
                 is_toric=False)
         elif params.task == "unrotated_memory_z":
+            if params.distance is None:
+                raise NotImplementedError('Rectangular unrotated memories are '
+                                          'not currently supported')
             return _generate_unrotated_surface_or_toric_code_circuit(
                 params=params,
                 is_memory_x=False,
                 is_toric=False)
     elif params.code_name == "toric_code":
+        if params.distance is None:
+            raise NotImplementedError('Rectangular toric codes are '
+                                      'not currently supported')
         if params.task == "unrotated_memory_x":
             return _generate_unrotated_surface_or_toric_code_circuit(
                 params=params,
