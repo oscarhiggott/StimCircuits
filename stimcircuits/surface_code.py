@@ -110,7 +110,10 @@ def finish_surface_code_circuit(
 ) -> stim.Circuit:
     if params.rounds < 1:
         raise ValueError("Need rounds >= 1")
-    if params.distance < 2:
+    if params.distance is not None and params.distance < 2:
+        raise ValueError("Need a distance >= 2")
+    if params.x_distance is not None and (params.x_distance < 2 or
+                                          params.z_distance < 2):
         raise ValueError("Need a distance >= 2")
 
     chosen_basis_observable = x_observable if is_memory_x else z_observable
