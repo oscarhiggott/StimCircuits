@@ -466,6 +466,13 @@ def generate_circuit(
         Returns:
             The generated circuit.
         """
+    if distance is not None:
+        pass
+    elif (x_distance is not None and z_distance is not None):
+        pass
+    else:
+        raise ValueError('Either the distance parameter or x_distance and '
+                         'z_distance parameters must be specified')
     code_name, task = code_task.split(":")
     if code_name in ["surface_code", "toric_code"]:
         params = CircuitGenParameters(
