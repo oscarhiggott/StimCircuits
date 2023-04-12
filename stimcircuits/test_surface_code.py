@@ -17,7 +17,6 @@ import stim
 from stimcircuits.surface_code import generate_circuit
 from typing import Set
 
-
 gen_test_params_surface_code = [
     ("surface_code:unrotated_memory_x", 3, 10, 0.001, 0.002, 0.003, 0.004),
     ("surface_code:unrotated_memory_x", 5, 1, 0.1, 0.002, 0.003, 0.004),
@@ -47,7 +46,6 @@ gen_test_params_distances_surface_code = [
     ("surface_code:rotated_memory_z", 5, 3, 5, 1, 0.1, 0.002, 0.003, 0.004),
     ("surface_code:rotated_memory_z", 2, 2, 2, 2, 0, 0.01, 0, 0)
 ]
-
 
 gen_test_params_rectangular_rotated_surface_code = [
     ("surface_code:rotated_memory_x", 3, 3, 10, 0.001, 0.002, 0.003, 0.004),
@@ -155,6 +153,7 @@ def test_generated_circuit_graphlike_distance(
         shortest_error = dem.shortest_graphlike_error()
         assert len(shortest_error) == distance
 
+
 @pytest.mark.parametrize(
     "code_task,distance,x_distance,z_distance,rounds,after_clifford_depolarization,"
     "before_round_data_depolarization,"
@@ -189,6 +188,7 @@ def test_generated_circuit_with_distances_graphlike_distance(
         shortest_error = dem.shortest_graphlike_error()
         assert len(shortest_error) == distance
 
+
 @pytest.mark.parametrize(
     "code_task,x_distance,z_distance,rounds,after_clifford_depolarization,"
     "before_round_data_depolarization,"
@@ -222,11 +222,12 @@ def test_generated_rectangular_circuit_graphlike_distance(
         assert len(shortest_error) == z_distance if code_task[-1] == 'x' else \
             x_distance
 
+
 @pytest.mark.parametrize(
     "code_task,x_distance,z_distance,rounds,after_clifford_depolarization,"
     "before_round_data_depolarization,"
     "before_measure_flip_probability,after_reset_flip_probability",
-    gen_test_params_rectangular_unrotated_surface_code+gen_test_params_rectangular_toric_code
+    gen_test_params_rectangular_unrotated_surface_code + gen_test_params_rectangular_toric_code
 )
 def test_not_implemented_rectangular_circuit(
         code_task: str,
@@ -311,5 +312,3 @@ def test_no_boundary_for_toric_code_circuits(
         if isinstance(instruction, stim.DemInstruction) and instruction.type == "error":
             num_dets = sum(1 for t in instruction.targets_copy() if t.is_relative_detector_id())
             assert num_dets > 1
-
-

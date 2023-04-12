@@ -252,11 +252,11 @@ def generate_rotated_surface_code_circuit(
         is_memory_x: bool
 ) -> stim.Circuit:
     if params.distance is not None:
-        x_distance=params.distance
-        z_distance=params.distance
+        x_distance = params.distance
+        z_distance = params.distance
     else:
-        x_distance=params.x_distance
-        z_distance=params.z_distance
+        x_distance = params.x_distance
+        z_distance = params.z_distance
 
     # Place data qubits
     data_coords: Set[complex] = set()
@@ -290,11 +290,11 @@ def generate_rotated_surface_code_circuit(
                 z_measure_coords.add(q)
 
     # Define interaction orders so that hook errors run against the error grain instead of with it.
-    z_order: List[complex] = [1 + 1j, 1 - 1j, -1 + 1j, -1 -1j]
-    x_order: List[complex] = [1 + 1j, -1 + 1j, 1 - 1j, -1 -1j]
+    z_order: List[complex] = [1 + 1j, 1 - 1j, -1 + 1j, -1 - 1j]
+    x_order: List[complex] = [1 + 1j, -1 + 1j, 1 - 1j, -1 - 1j]
 
     def coord_to_idx(q: complex) -> int:
-        q = q - math.fmod(q.real, 2)*1j
+        q = q - math.fmod(q.real, 2) * 1j
         return int(q.real + q.imag * (z_distance + 0.5))
 
     return finish_surface_code_circuit(
@@ -407,17 +407,17 @@ def generate_surface_or_toric_code_circuit_from_params(params: CircuitGenParamet
 
 
 def generate_circuit(
-    code_task: str,
-    *,
-    rounds: int,
-    distance: int = None,
-    x_distance: int = None,
-    z_distance: int = None,
-    after_clifford_depolarization: float = 0.0,
-    before_round_data_depolarization: float = 0.0,
-    before_measure_flip_probability: float = 0.0,
-    after_reset_flip_probability: float = 0.0,
-    exclude_other_basis_detectors: bool = False,
+        code_task: str,
+        *,
+        rounds: int,
+        distance: int = None,
+        x_distance: int = None,
+        z_distance: int = None,
+        after_clifford_depolarization: float = 0.0,
+        before_round_data_depolarization: float = 0.0,
+        before_measure_flip_probability: float = 0.0,
+        after_reset_flip_probability: float = 0.0,
+        exclude_other_basis_detectors: bool = False,
 ) -> stim.Circuit:
     """Generates common circuits.
 
@@ -429,6 +429,8 @@ def generate_circuit(
         The generated circuits include TICK annotations to mark the progression of time.
         (E.g. so that converting them using `stimcirq.stim_circuit_to_cirq_circuit` will
         produce a `cirq.Circuit` with the intended moment structure.)
+
+        Note that the toric_code circuits currently only include one of the two logical observables.
 
         Args:
             code_task: A string identifying the type of circuit to generate. Available
@@ -480,7 +482,7 @@ def generate_circuit(
         """
     if distance is not None:
         pass
-    elif (x_distance is not None and z_distance is not None):
+    elif x_distance is not None and z_distance is not None:
         pass
     else:
         raise ValueError('Either the distance parameter or x_distance and '
